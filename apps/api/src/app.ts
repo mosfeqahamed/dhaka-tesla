@@ -7,6 +7,9 @@ import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { errorHandler, notFound } from './middleware/error-handler.js';
 import { authRouter, meRouter } from './modules/auth/auth.routes.js';
+import { faresRouter } from './modules/fares/fares.routes.js';
+import { ridesRouter } from './modules/rides/rides.routes.js';
+import { zonesRouter } from './modules/zones/zones.routes.js';
 import { healthRouter } from './routes/health.js';
 
 // Built as a factory so tests can mount the app without opening a port.
@@ -32,6 +35,9 @@ export function createApp() {
   app.use('/health', healthRouter);
   app.use('/auth', authRouter());
   app.use('/me', meRouter());
+  app.use('/zones', zonesRouter());
+  app.use('/fares', faresRouter());
+  app.use('/rides', ridesRouter());
 
   app.use(notFound);
   app.use(errorHandler);
