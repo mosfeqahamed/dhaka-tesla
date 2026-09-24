@@ -22,6 +22,7 @@ export default defineConfig({
       NODE_ENV: 'test',
       DATABASE_URL: testUrl.toString(),
       SEED_PASSWORD: 'test-password',
+      JWT_SECRET: 'test-only-secret-that-is-at-least-32-characters-long',
     },
     // Test files share one database; run them one at a time.
     fileParallelism: false,

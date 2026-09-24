@@ -1,16 +1,16 @@
-import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { closeDb, db } from './client.js';
 import { users, vehicles, zoneDistances, zones } from './schema/index.js';
 import { BULLET, DISTANCES_M, DRIVER, PASSENGERS, ZONES } from './seed-data.js';
 import { logger } from '../lib/logger.js';
+import { hashPassword } from '../lib/password.js';
 
 // Idempotent: safe to run on every `docker compose up`. Existing rows are
 // left alone (ON CONFLICT DO NOTHING), so a re-seed never wipes ride history.
 export async function seed() {
   const password = process.env.SEED_PASSWORD;
   if (!password) throw new Error('SEED_PASSWORD must be set to seed demo accounts');
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await hashPassword(password);
 
   await db.transaction(async (tx) => {
     await tx
