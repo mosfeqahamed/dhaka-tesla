@@ -38,3 +38,28 @@ Seeding is idempotent, so it is safe to re-run. All demo accounts use the `SEED_
 After changing the schema in `apps/api/src/db/schema/`, run
 `npm run db:generate -w @dhaka-tesla/api` to create a new migration, review the generated SQL, and
 commit it.
+
+## Demo accounts
+
+All seeded accounts use the `SEED_PASSWORD` from your `.env`.
+
+| Who    | Role      | Email                   | Notes                           |
+| ------ | --------- | ----------------------- | ------------------------------- |
+| Nusrat | Passenger | `nusrat@teslapool.test` | Banani → Mohakhali in the story |
+| Rafiq  | Passenger | `rafiq@teslapool.test`  | Banani → Gulshan 1              |
+| Shirin | Passenger | `shirin@teslapool.test` | Wants 2 seats; only 1 is left   |
+| Jashim | Driver    | `jashim@teslapool.test` | Drives Bullet (3 seats, Banani) |
+
+## Authentication
+
+- `POST /auth/register` (passengers only), `POST /auth/login`, `POST /auth/logout`, `GET /me`.
+- Sessions are a signed JWT (HS256, `jose`) in an `HttpOnly; SameSite=Lax` cookie, `Secure` in
+  production. Page scripts can't read it, and browsers won't send it on cross-site POSTs. The web app
+  reaches the API through a same-origin proxy, so the cookie is never third-party.
+- Drivers cannot self-register: a driver needs a Tesla with a plate and a fixed capacity, which the
+  operator onboards (the seed, in the MVP).
+- Passwords are hashed with bcrypt (cost 10). Login runs bcrypt even for unknown emails and returns
+  the same error for both cases, so it doesn't reveal which emails are registered.
+- Failed sign-in/sign-up attempts are rate-limited per IP (`AUTH_RATE_LIMIT` per 15 minutes).
+- Duplicate emails/phones are caught by the database's unique constraints, not a pre-check, so two
+  simultaneous sign-ups can't both succeed.
