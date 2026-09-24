@@ -26,6 +26,15 @@ Prerequisites: Node.js 22+, Docker with Compose v2.
 cp .env.example .env        # then replace the placeholder values
 npm install
 docker compose up -d        # Postgres 16 with a healthcheck
+npm run db:migrate -w @dhaka-tesla/api   # apply migrations in apps/api/drizzle
+npm run db:seed -w @dhaka-tesla/api      # zones, distances, Jashim + Bullet, Nusrat, Rafiq, Shirin
 npm run dev:api             # API on http://localhost:4000 — try GET /health
-npm test                    # API tests
+npm test                    # API tests (uses a separate <db>_test database)
 ```
+
+Seeding is idempotent, so it is safe to re-run. All demo accounts use the `SEED_PASSWORD` from your
+`.env`.
+
+After changing the schema in `apps/api/src/db/schema/`, run
+`npm run db:generate -w @dhaka-tesla/api` to create a new migration, review the generated SQL, and
+commit it.

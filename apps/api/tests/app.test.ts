@@ -1,14 +1,16 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
+import { closeDb } from '../src/db/client.js';
 
 const app = createApp();
+afterAll(closeDb);
 
 describe('app bootstrap', () => {
-  it('GET /health reports ok', async () => {
+  it('GET /health reports ok with the database up', async () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
+    expect(res.body).toMatchObject({ status: 'ok', db: 'up' });
   });
 
   it('echoes a request id for log correlation', async () => {
