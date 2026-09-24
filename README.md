@@ -63,3 +63,32 @@ All seeded accounts use the `SEED_PASSWORD` from your `.env`.
 - Failed sign-in/sign-up attempts are rate-limited per IP (`AUTH_RATE_LIMIT` per 15 minutes).
 - Duplicate emails/phones are caught by the database's unique constraints, not a pre-check, so two
   simultaneous sign-ups can't both succeed.
+
+## API overview
+
+JSON over REST. Errors always look like `{ "error": { "code": "POOL_FULL", "message": "…" } }`, so
+the frontend branches on `code`, never on message text. Money is integer paisa (৳1 = 100).
+
+| Method | Path                | Who       | What                                                         |
+| ------ | ------------------- | --------- | ------------------------------------------------------------ |
+| GET    | `/health`           | anyone    | Liveness + database check (503 when the DB is down)          |
+| POST   | `/auth/register`    | anyone    | Passenger sign-up; signs you in                              |
+| POST   | `/auth/login`       | anyone    | Sign in (sets the session cookie)                            |
+| POST   | `/auth/logout`      | anyone    | Clear the session cookie                                     |
+| GET    | `/me`               | signed in | Your profile; drivers also get their Tesla                   |
+| GET    | `/zones`            | anyone    | The Dhaka zones you can ride between                         |
+| POST   | `/fares/estimate`   | anyone    | Solo and pooled price for a trip                             |
+| POST   | `/rides`            | passenger | Request a ride (requires an `Idempotency-Key` UUID header)   |
+| GET    | `/rides/current`    | passenger | Your ride in progress, or `null`                             |
+| GET    | `/rides`            | passenger | Your history, newest first (`?limit=&before=<last ride id>`) |
+| GET    | `/rides/:id`        | passenger | One of your rides with its status timeline                   |
+| POST   | `/rides/:id/cancel` | passenger | Cancel before the trip starts (optional `reason`)            |
+
+Why REST rather than GraphQL: the domain is a handful of resources with state-changing actions
+(accept, arrive, start, cancel) that map naturally to `POST /resource/:id/action`, HTTP status codes
+carry the important outcomes (409 for a lost race, 422 for a rule violation), and it needs no extra
+client or schema tooling.
+
+**Idempotency.** Every `POST /rides` carries a client-generated UUID. Retrying with the same key
+(double tap, flaky 3G) returns the original ride with `200` instead of booking twice — even when the
+two copies arrive at the same moment. Reusing a key for a different trip is rejected with `422`.

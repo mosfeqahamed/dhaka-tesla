@@ -10,6 +10,13 @@ export async function resetDb() {
   `);
 }
 
+// Clear ride activity but keep users, Teslas and zones.
+export async function resetRides() {
+  await db.execute(
+    sql`TRUNCATE payments, status_events, pool_members, pools, ride_requests CASCADE`,
+  );
+}
+
 // First row of a query result, failing loudly instead of returning undefined.
 export function first<T>(rows: T[]): T {
   const [row] = rows;
