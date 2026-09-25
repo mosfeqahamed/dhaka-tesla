@@ -28,7 +28,10 @@ A new request **R** joins an existing pool **P** when all of these hold:
 
 Candidate pools are tried oldest first, so existing pools fill up before new ones are started. If no
 pool qualifies, R stays `REQUESTED` and appears in the feed of every online driver whose current zone
-is R's pickup zone; a driver accepting it creates a new pool.
+is R's pickup zone. A driver accepting it either starts a new pool (no active trip, Tesla parked in
+R's pickup zone) or, if their pool is still `ACCEPTED`, adds R to it — under exactly the same four
+rules. That second path is what lets two passengers who booked _before_ any Tesla came online still
+end up sharing one.
 
 Assumption: every request is pool-eligible (this is a pooling app); a driver accepting a pool
 consents to compatible passengers being added until they mark arrival.
@@ -130,8 +133,22 @@ AND status = 'REQUESTED'` — the loser updates 0 rows and gets `409`.
 - One driver accepting two requests at once: the partial unique index "one active pool per vehicle"
   rejects the second.
 
-**Tested by** firing two join requests for the last seat concurrently (`Promise.all`) against a real
-Postgres and asserting exactly one succeeds and `seats_taken` ends at `capacity`.
+**Lock order.** Every path takes locks in the same order — the Tesla (driver accept only), then the
+pool row, then the ride row — and candidate pools are always tried in `(created_at, id)` order. Two
+transactions can therefore wait on each other but never deadlock.
+
+**Tested by** running the races for real against Postgres (`tests/pooling.test.ts`):
+
+- Nusrat and Shirin request Bullet's last seat at the same moment → exactly one is `MATCHED`.
+- Eight commuters stampede for two free seats → exactly two get in, `seats_taken` = 3, and the sum of
+  members' seats equals `seats_taken`.
+- Jashim accepts while Nusrat cancels → one wins; the loser leaves nothing half-done.
+- Jashim taps accept on two requests at once → one pool with both, not two pools.
+
+We checked that these tests actually exercise the lock: with `FOR UPDATE` removed, the stampede test
+fails. Tellingly, it fails with errors rather than overbooking — the `CHECK` constraint still refuses
+the fourth seat. The CHECK keeps the data correct; the lock is what turns the loser's error into a
+clean "still waiting".
 
 **What changes at scale.** A row lock per pool is cheap, and contention is limited to people joining
 the _same_ Tesla at the same moment. At much larger scale the bottleneck becomes the single primary

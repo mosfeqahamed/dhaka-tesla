@@ -13,6 +13,7 @@ import { HttpError } from '../../lib/http-error.js';
 import { uniqueViolation } from '../../lib/pg-errors.js';
 import { calculateFare } from '../fares/fare.js';
 import { transitionRequest } from '../lifecycle/transitions.js';
+import { cancelPooledRide, poolInfoForRides, tryAutoJoin } from '../pools/pooling.service.js';
 import { distanceBetween } from '../zones/zones.service.js';
 import type { CancelRideInput, CreateRideInput } from './rides.schemas.js';
 
@@ -40,7 +41,19 @@ const ridesQuery = () =>
     .innerJoin(pickupZone, eq(pickupZone.id, rideRequests.pickupZoneId))
     .innerJoin(dropoffZone, eq(dropoffZone.id, rideRequests.dropoffZoneId));
 
-export type RideView = Awaited<ReturnType<typeof ridesQuery>>[number];
+type RideRow = Awaited<ReturnType<typeof ridesQuery>>[number];
+
+// Adds the pool the ride is in (if any) and the passenger's own fare breakdown.
+async function withPoolInfo(rides: RideRow[]) {
+  const info = await poolInfoForRides(rides.map((r) => r.id));
+  return rides.map((r) => ({
+    ...r,
+    pool: info.get(r.id)?.pool ?? null,
+    fare: info.get(r.id)?.fare ?? null,
+  }));
+}
+
+export type RideView = Awaited<ReturnType<typeof withPoolInfo>>[number];
 
 const notFound = () => new HttpError(404, 'RIDE_NOT_FOUND', 'Ride not found');
 
@@ -50,7 +63,8 @@ async function findOwnRide(passengerId: string, rideId: string) {
     and(eq(rideRequests.id, rideId), eq(rideRequests.passengerId, passengerId)),
   );
   if (!ride) throw notFound();
-  return ride;
+  const [view] = await withPoolInfo([ride]);
+  return view!;
 }
 
 async function findByIdempotencyKey(passengerId: string, key: string) {
@@ -117,7 +131,7 @@ export async function createRide(
           paymentMethod: input.paymentMethod,
           estimatedFarePaisa: estimate.totalFarePaisa,
         })
-        .returning({ id: rideRequests.id });
+        .returning();
       await tx.insert(statusEvents).values({
         rideRequestId: ride!.id,
         fromStatus: null,
@@ -125,6 +139,9 @@ export async function createRide(
         actorId: passengerId,
         metadata: { estimate },
       });
+      // Same transaction: the ride is either waiting or already in a pool,
+      // never visible half-matched.
+      await tryAutoJoin(tx, ride!);
       return ride!.id;
     });
     return { ride: await findOwnRide(passengerId, id), replayed: false };
@@ -181,7 +198,9 @@ export async function getCurrentRide(passengerId: string) {
       ),
     )
     .limit(1);
-  return ride ?? null;
+  if (!ride) return null;
+  const [view] = await withPoolInfo([ride]);
+  return view!;
 }
 
 // Keyset pagination: `before` is the id of the last ride on the previous page.
@@ -204,7 +223,7 @@ export async function listRides(passengerId: string, opts: { limit: number; befo
 
   const page = rides.slice(0, opts.limit);
   return {
-    rides: page,
+    rides: await withPoolInfo(page),
     nextCursor: rides.length > opts.limit ? (page.at(-1)?.id ?? null) : null,
   };
 }
@@ -212,16 +231,23 @@ export async function listRides(passengerId: string, opts: { limit: number; befo
 export async function cancelRide(passengerId: string, rideId: string, input: CancelRideInput) {
   const ride = await findOwnRide(passengerId, rideId);
 
+  const reason = input.reason ?? 'Cancelled by passenger';
+
   await db.transaction(async (tx) => {
-    // transitionRequest rejects anything the lifecycle doesn't allow
-    // (e.g. STARTED -> CANCELLED) and anything that changed under us.
-    await transitionRequest(tx, {
-      id: ride.id,
-      from: ride.status,
-      to: 'CANCELLED',
-      actorId: passengerId,
-      reason: input.reason ?? 'Cancelled by passenger',
-    });
+    // In a pool: release the seats and re-price co-riders under the pool
+    // lock. Otherwise it's a plain waiting request. Either way the
+    // transition rejects anything the lifecycle doesn't allow (STARTED ->
+    // CANCELLED) and anything that changed under us.
+    const pooled = await cancelPooledRide(tx, ride.id, passengerId, reason);
+    if (!pooled) {
+      await transitionRequest(tx, {
+        id: ride.id,
+        from: ride.status,
+        to: 'CANCELLED',
+        actorId: passengerId,
+        reason,
+      });
+    }
   });
 
   return findOwnRide(passengerId, rideId);

@@ -80,7 +80,10 @@ stateDiagram-v2
    passenger sees why (the event `reason`) and can request again. Re-queueing is a listed
    improvement.
 6. **A driver cannot go offline with an active pool.**
-7. **Ownership:** a passenger acts only on their own requests, a driver only on pools of their own
+7. **Accepting into an existing pool.** While a driver's pool is `ACCEPTED`, accepting another waiting
+   request adds it to that pool (same matching rules) instead of starting a second one — a Tesla runs
+   one trip at a time.
+8. **Ownership:** a passenger acts only on their own requests, a driver only on pools of their own
    vehicle. Other people's rides return `404`, not `403`, so the API doesn't confirm they exist.
 
 ## The story, as transitions
