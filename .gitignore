@@ -21,3 +21,10 @@ npm-debug.log*
 !.vscode/extensions.json
 .idea/
 .DS_Store
+
+# next.js
+next-env.d.ts
+*.tsbuildinfo
+# written by `next dev` only when it detects an AI coding agent
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
