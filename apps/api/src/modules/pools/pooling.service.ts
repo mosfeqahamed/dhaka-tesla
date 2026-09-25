@@ -37,12 +37,12 @@ const REJECTION_MESSAGES: Record<Rejection, string> = {
   ROUTE_INCOMPATIBLE: 'This dropoff is too far from the other passengers’ dropoffs',
 };
 
-async function lockPool(tx: Tx, poolId: string) {
+export async function lockPool(tx: Tx, poolId: string) {
   const [pool] = await tx.select().from(pools).where(eq(pools.id, poolId)).for('update');
   return pool;
 }
 
-async function activeMembers(tx: Tx, poolId: string) {
+export async function activeMembers(tx: Tx, poolId: string) {
   return tx
     .select({
       memberId: poolMembers.id,

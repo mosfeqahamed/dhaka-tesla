@@ -69,25 +69,38 @@ All seeded accounts use the `SEED_PASSWORD` from your `.env`.
 JSON over REST. Errors always look like `{ "error": { "code": "POOL_FULL", "message": "…" } }`, so
 the frontend branches on `code`, never on message text. Money is integer paisa (৳1 = 100).
 
-| Method | Path                | Who       | What                                                         |
-| ------ | ------------------- | --------- | ------------------------------------------------------------ |
-| GET    | `/health`           | anyone    | Liveness + database check (503 when the DB is down)          |
-| POST   | `/auth/register`    | anyone    | Passenger sign-up; signs you in                              |
-| POST   | `/auth/login`       | anyone    | Sign in (sets the session cookie)                            |
-| POST   | `/auth/logout`      | anyone    | Clear the session cookie                                     |
-| GET    | `/me`               | signed in | Your profile; drivers also get their Tesla                   |
-| GET    | `/zones`            | anyone    | The Dhaka zones you can ride between                         |
-| POST   | `/fares/estimate`   | anyone    | Solo and pooled price for a trip                             |
-| POST   | `/rides`            | passenger | Request a ride (requires an `Idempotency-Key` UUID header)   |
-| GET    | `/rides/current`    | passenger | Your ride in progress, or `null`                             |
-| GET    | `/rides`            | passenger | Your history, newest first (`?limit=&before=<last ride id>`) |
-| GET    | `/rides/:id`        | passenger | One of your rides with its status timeline                   |
-| POST   | `/rides/:id/cancel` | passenger | Cancel before the trip starts (optional `reason`)            |
+| Method | Path                          | Who       | What                                                                   |
+| ------ | ----------------------------- | --------- | ---------------------------------------------------------------------- |
+| GET    | `/health`                     | anyone    | Liveness + database check (503 when the DB is down)                    |
+| POST   | `/auth/register`              | anyone    | Passenger sign-up; signs you in                                        |
+| POST   | `/auth/login`                 | anyone    | Sign in (sets the session cookie)                                      |
+| POST   | `/auth/logout`                | anyone    | Clear the session cookie                                               |
+| GET    | `/me`                         | signed in | Your profile; drivers also get their Tesla                             |
+| GET    | `/zones`                      | anyone    | The Dhaka zones you can ride between                                   |
+| POST   | `/fares/estimate`             | anyone    | Solo and pooled price for a trip                                       |
+| POST   | `/rides`                      | passenger | Request a ride (requires an `Idempotency-Key` UUID header)             |
+| GET    | `/rides/current`              | passenger | Your ride in progress, or `null`                                       |
+| GET    | `/rides`                      | passenger | Your history, newest first (`?limit=&before=<last ride id>`)           |
+| GET    | `/rides/:id`                  | passenger | One of your rides with its status timeline                             |
+| POST   | `/rides/:id/cancel`           | passenger | Cancel before the trip starts (optional `reason`)                      |
+| PATCH  | `/driver/status`              | driver    | Go `ONLINE`/`OFFLINE` and set the zone you're waiting in               |
+| GET    | `/driver/requests`            | driver    | Waiting requests in your zone, oldest first, plus your current trip    |
+| POST   | `/driver/requests/:id/accept` | driver    | Start a trip with this ride, or add it to your trip if not yet arrived |
+| GET    | `/pools/current`              | driver    | Your trip in progress: riders, seats, each rider's fare                |
+| GET    | `/pools`                      | driver    | Your trip history (`?limit=&before=<last trip id>`)                    |
+| GET    | `/pools/:id`                  | driver    | One trip with its status timeline                                      |
+| POST   | `/pools/:id/arrive`           | driver    | Mark arrival at pickup; the pool stops taking new riders               |
+| POST   | `/pools/:id/start`            | driver    | Start the trip; fares are final from here                              |
+| POST   | `/pools/:id/complete`         | driver    | Finish the trip; records each rider's (simulated) payment              |
+| POST   | `/pools/:id/cancel`           | driver    | Cancel before starting; every rider is cancelled with your `reason`    |
 
 Why REST rather than GraphQL: the domain is a handful of resources with state-changing actions
 (accept, arrive, start, cancel) that map naturally to `POST /resource/:id/action`, HTTP status codes
 carry the important outcomes (409 for a lost race, 422 for a rule violation), and it needs no extra
 client or schema tooling.
+
+Every pool action moves the Tesla and all of its riders in one transaction: either Bullet and
+everyone in it advance together, or nothing changes.
 
 **Idempotency.** Every `POST /rides` carries a client-generated UUID. Retrying with the same key
 (double tap, flaky 3G) returns the original ride with `200` instead of booking twice — even when the
