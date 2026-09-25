@@ -9,7 +9,18 @@ import {
 } from '@tanstack/react-query';
 import { api, ApiError } from './api';
 import { isFinished } from './status';
-import type { FareEstimate, PaymentMethod, Ride, RidesPage, User, Zone } from './types';
+import type {
+  DriverFeed,
+  DriverPool,
+  FareEstimate,
+  PaymentMethod,
+  PoolAction,
+  PoolsPage,
+  Ride,
+  RidesPage,
+  User,
+  Zone,
+} from './types';
 
 // How often an in-progress ride refreshes. Polling rather than WebSockets:
 // see docs/architecture.md.
@@ -22,6 +33,9 @@ export const keys = {
   currentRide: ['rides', 'current'] as const,
   ride: (id: string) => ['rides', 'detail', id] as const,
   rideHistory: ['rides', 'history'] as const,
+  driverFeed: ['driver', 'feed'] as const,
+  pool: (id: string) => ['driver', 'pool', id] as const,
+  poolHistory: ['driver', 'pools'] as const,
 };
 
 // ---- session ----
@@ -161,5 +175,76 @@ export function useCancelRide() {
       qc.invalidateQueries({ queryKey: ['rides'] });
       qc.invalidateQueries({ queryKey: keys.ride(id) });
     },
+  });
+}
+
+// ---- driver ----
+
+// Feed + current trip in one call. Polled while online so new requests,
+// auto-matched riders and passenger cancellations show up on their own.
+export function useDriverFeed() {
+  return useQuery({
+    queryKey: keys.driverFeed,
+    queryFn: () => api<DriverFeed>('/driver/requests'),
+    refetchInterval: (q) => (q.state.data?.online || q.state.data?.currentPool ? POLL_MS : false),
+  });
+}
+
+export function useSetDriverStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { status: 'ONLINE' | 'OFFLINE'; zoneId?: number }) =>
+      api('/driver/status', { method: 'PATCH', body: input }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: keys.driverFeed });
+      qc.invalidateQueries({ queryKey: keys.me });
+    },
+  });
+}
+
+export function useAcceptRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rideId: string) =>
+      api<{ pool: DriverPool }>(`/driver/requests/${rideId}/accept`, { method: 'POST' }),
+    // Refetch on failure too: a 409 usually means the feed is stale.
+    onSettled: () => qc.invalidateQueries({ queryKey: ['driver'] }),
+  });
+}
+
+export function usePoolAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      poolId,
+      action,
+      reason,
+    }: {
+      poolId: string;
+      action: PoolAction;
+      reason?: string;
+    }) =>
+      api<{ pool: DriverPool }>(`/pools/${poolId}/${action}`, {
+        method: 'POST',
+        body: action === 'cancel' && reason ? { reason } : {},
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['driver'] }),
+  });
+}
+
+export function usePool(id: string) {
+  return useQuery({
+    queryKey: keys.pool(id),
+    queryFn: async () => (await api<{ pool: DriverPool }>(`/pools/${id}`)).pool,
+  });
+}
+
+export function usePoolHistory() {
+  return useInfiniteQuery({
+    queryKey: keys.poolHistory,
+    queryFn: ({ pageParam }) =>
+      api<PoolsPage>(`/pools?limit=10${pageParam ? `&before=${pageParam}` : ''}`),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
   });
 }

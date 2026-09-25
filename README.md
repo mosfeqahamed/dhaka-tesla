@@ -48,6 +48,12 @@ Next.js 16 (App Router) in `apps/web`, styled with Tailwind CSS v4, data fetchin
   Express API (`API_URL`). The session cookie is therefore first-party and there is no CORS setup.
 - **Live status by polling.** A ride in progress refreshes every 4 s and stops once it is finished.
   Jashim accepting, Rafiq joining, or the trip starting shows up on Nusrat's screen within seconds.
+- **Passenger screens** (`/ride`): book with a live solo/pooled quote, watch the ride move through its
+  stages with the Tesla, co-rider count and your own fare breakdown, cancel (two-step), history and a
+  per-ride timeline.
+- **Driver screens** (`/drive`): go online in a zone, see waiting requests, accept (or add to the
+  current trip), see each rider's dropoff, seats and fare, then arrive → start → complete with one
+  button per stage; cancel with a reason; trip history with timelines.
 - **Every screen has loading, error and empty states**, and API errors are shown by their `code`
   (e.g. a cancel that loses a race says the ride moved on, instead of a generic error).
 - **Route guard is UX only.** `proxy.ts` sends visitors without a session cookie to `/login`, and a
