@@ -7,6 +7,7 @@ import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { errorHandler, notFound } from './middleware/error-handler.js';
 import { authRouter, meRouter } from './modules/auth/auth.routes.js';
+import { driverRouter, poolsRouter } from './modules/driver/driver.routes.js';
 import { faresRouter } from './modules/fares/fares.routes.js';
 import { ridesRouter } from './modules/rides/rides.routes.js';
 import { zonesRouter } from './modules/zones/zones.routes.js';
@@ -38,6 +39,8 @@ export function createApp() {
   app.use('/zones', zonesRouter());
   app.use('/fares', faresRouter());
   app.use('/rides', ridesRouter());
+  app.use('/driver', driverRouter());
+  app.use('/pools', poolsRouter());
 
   app.use(notFound);
   app.use(errorHandler);
