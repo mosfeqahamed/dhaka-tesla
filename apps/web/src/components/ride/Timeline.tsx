@@ -1,6 +1,6 @@
 import { formatDateTime } from '@/lib/format';
 import { STATUS_LABEL } from '@/lib/status';
-import type { RideStatus, TimelineEvent } from '@/lib/types';
+import type { TimelineEvent } from '@/lib/types';
 
 const WHO: Record<string, string> = {
   YOU: 'You',
@@ -9,8 +9,14 @@ const WHO: Record<string, string> = {
   PASSENGER: 'Passenger',
 };
 
-// The ride's audit log, as the passenger is allowed to see it.
-export function Timeline({ events }: { events: TimelineEvent[] }) {
+// A ride's or trip's audit log. `labels` turns status codes into words.
+export function Timeline({
+  events,
+  labels = STATUS_LABEL,
+}: {
+  events: TimelineEvent[];
+  labels?: Record<string, string>;
+}) {
   return (
     <ol className="relative space-y-4 border-l border-stone-200 pl-5">
       {events.map((e, i) => (
@@ -19,9 +25,7 @@ export function Timeline({ events }: { events: TimelineEvent[] }) {
             className="absolute -left-[25px] top-1.5 size-2.5 rounded-full bg-brand-500"
             aria-hidden
           />
-          <p className="text-sm font-semibold">
-            {STATUS_LABEL[e.toStatus as RideStatus] ?? e.toStatus}
-          </p>
+          <p className="text-sm font-semibold">{labels[e.toStatus] ?? e.toStatus}</p>
           <p className="text-xs text-stone-500">
             {formatDateTime(e.at)}
             {e.by && ` · ${WHO[e.by] ?? e.by}`}

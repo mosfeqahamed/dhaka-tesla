@@ -82,3 +82,56 @@ export interface RidesPage {
   rides: Ride[];
   nextCursor: string | null;
 }
+
+// ---- driver side ----
+
+export interface PoolPassenger {
+  rideId: string;
+  passengerName: string;
+  status: RideStatus;
+  seats: number;
+  paymentMethod: PaymentMethod;
+  pickupZone: Zone;
+  dropoffZone: Zone;
+  fare: FareBreakdown;
+  joinedAt: string;
+}
+
+export interface DriverPool {
+  id: string;
+  status: PoolStatus;
+  capacity: number;
+  seatsTaken: number;
+  seatsFree: number;
+  pickupZone: Zone;
+  tesla: { name: string; plateNo: string };
+  passengers: PoolPassenger[];
+  totalFarePaisa: number;
+  createdAt: string;
+  updatedAt: string;
+  timeline?: TimelineEvent[];
+}
+
+export interface WaitingRequest {
+  id: string;
+  passengerName: string;
+  seats: number;
+  dropoffZone: Zone;
+  estimatedFarePaisa: number;
+  paymentMethod: PaymentMethod;
+  waitingSince: string;
+}
+
+export interface DriverFeed {
+  online: boolean;
+  zone: Zone | null;
+  currentPool: DriverPool | null;
+  requests: WaitingRequest[];
+}
+
+export interface PoolsPage {
+  pools: DriverPool[];
+  nextCursor: string | null;
+}
+
+export type PoolAction = 'arrive' | 'start' | 'complete' | 'cancel';
