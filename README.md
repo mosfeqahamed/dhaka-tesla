@@ -29,7 +29,8 @@ docker compose up -d        # Postgres 16 with a healthcheck
 npm run db:migrate -w @dhaka-tesla/api   # apply migrations in apps/api/drizzle
 npm run db:seed -w @dhaka-tesla/api      # zones, distances, Jashim + Bullet, Nusrat, Rafiq, Shirin
 npm run dev:api             # API on http://localhost:4000 — try GET /health
-npm test                    # API tests (uses a separate <db>_test database)
+npm run dev:web             # web app on http://localhost:3000 (run alongside the API)
+npm test                    # API + web tests (API tests use a separate <db>_test database)
 ```
 
 Seeding is idempotent, so it is safe to re-run. All demo accounts use the `SEED_PASSWORD` from your
@@ -38,6 +39,21 @@ Seeding is idempotent, so it is safe to re-run. All demo accounts use the `SEED_
 After changing the schema in `apps/api/src/db/schema/`, run
 `npm run db:generate -w @dhaka-tesla/api` to create a new migration, review the generated SQL, and
 commit it.
+
+## Web app
+
+Next.js 16 (App Router) in `apps/web`, styled with Tailwind CSS v4, data fetching with TanStack Query.
+
+- **Same-origin API.** The browser only talks to the Next.js origin; `/api/*` is rewritten to the
+  Express API (`API_URL`). The session cookie is therefore first-party and there is no CORS setup.
+- **Live status by polling.** A ride in progress refreshes every 4 s and stops once it is finished.
+  Jashim accepting, Rafiq joining, or the trip starting shows up on Nusrat's screen within seconds.
+- **Every screen has loading, error and empty states**, and API errors are shown by their `code`
+  (e.g. a cancel that loses a race says the ride moved on, instead of a generic error).
+- **Route guard is UX only.** `proxy.ts` sends visitors without a session cookie to `/login`, and a
+  role guard sends drivers and passengers to their own screens. The API enforces every rule itself.
+- **Double-booking protection.** The booking form sends an `Idempotency-Key` that stays the same
+  while the trip is unchanged, so a double tap or a retry after a timeout returns the same ride.
 
 ## Demo accounts
 

@@ -11,6 +11,7 @@
   },
   "scripts": {
     "dev:api": "npm run dev --workspace @dhaka-tesla/api",
+    "dev:web": "npm run dev --workspace @dhaka-tesla/web",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
@@ -20,8 +21,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@next/eslint-plugin-next": "^16.3.6",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.9.9",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.70.1"
