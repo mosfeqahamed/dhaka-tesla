@@ -105,6 +105,6 @@ sleep after inactivity, so the first request can take ~30–60 s.
 ## What changes at scale
 
 The MVP keeps all matching inside a single Postgres transaction per request. That is correct and
-simple, but it serialises writes per pool and puts all load on one primary. The viral-scale bonus in
-the README covers the next steps (geospatial indexing, per-zone matching workers, read replicas,
+simple, but it serialises writes per pool and puts all load on one primary. [docs/scaling.md](scaling.md)
+covers the next steps (geospatial indexing, per-zone matching workers, read replicas,
 real-time push, idempotency at the gateway, observability).
