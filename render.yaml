@@ -1,0 +1,30 @@
+# Render Blueprint for the API (free plan). Postgres lives on Neon (free) and
+# the web app on Vercel (free) - see docs/deployment.md.
+services:
+  - type: web
+    name: dhaka-tesla-api
+    runtime: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: ./apps/api/Dockerfile
+    healthCheckPath: /health
+    autoDeploy: false # deploy the release branch on purpose, not every push
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PORT
+        value: '10000' # Render routes traffic to port 10000 by default
+      - key: DATABASE_URL
+        sync: false # paste the Neon connection string (with ?sslmode=require)
+      - key: JWT_SECRET
+        generateValue: true # random, never leaves Render
+      - key: SEED_PASSWORD
+        sync: false # demo accounts' password
+      - key: SEED_ON_START
+        value: 'true'
+      - key: COOKIE_SECURE
+        value: 'true'
+      - key: TRUST_PROXY
+        value: '2' # Vercel's proxy + Render's load balancer
+      - key: LOG_LEVEL
+        value: info
