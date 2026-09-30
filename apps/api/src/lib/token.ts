@@ -45,7 +45,7 @@ export async function verifySession(token: string): Promise<AuthClaims | null> {
 export const sessionCookieOptions = (): CookieOptions => ({
   httpOnly: true,
   sameSite: 'lax',
-  secure: env.NODE_ENV === 'production',
+  secure: env.COOKIE_SECURE,
   path: '/',
   maxAge: env.JWT_TTL_HOURS * 60 * 60 * 1000,
 });
