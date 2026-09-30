@@ -1,0 +1,12 @@
+# Keep the build context small and never ship local secrets or build output.
+.git
+.env
+.env.*
+!.env.example
+**/node_modules
+**/dist
+**/.next
+**/coverage
+**/*.log
+**/*.tsbuildinfo
+docs
