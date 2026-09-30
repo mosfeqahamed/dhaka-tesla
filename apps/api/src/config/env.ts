@@ -19,10 +19,20 @@ const envSchema = z
     TRUST_PROXY: z.coerce.number().int().min(0).default(0),
     // Failed sign-in/sign-up attempts allowed per IP per 15 minutes.
     AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(20),
+    // Mark the session cookie Secure (HTTPS only). Defaults to on in production;
+    // set false only for plain-http runs such as local `docker compose up`.
+    COOKIE_SECURE: z.enum(['true', 'false']).optional(),
   })
-  .refine((e) => e.NODE_ENV !== 'production' || e.JWT_SECRET !== PLACEHOLDER_SECRET, {
+  .transform(({ COOKIE_SECURE, ...e }) => ({
+    ...e,
+    COOKIE_SECURE: COOKIE_SECURE ? COOKIE_SECURE === 'true' : e.NODE_ENV === 'production',
+  }))
+  // Anything served over HTTPS is a real deployment and must not run with the
+  // secret everyone can read in .env.example.
+  .refine((e) => !e.COOKIE_SECURE || e.JWT_SECRET !== PLACEHOLDER_SECRET, {
     path: ['JWT_SECRET'],
-    message: 'JWT_SECRET is still the .env.example placeholder',
+    message:
+      'JWT_SECRET is still the .env.example placeholder. Generate one with: openssl rand -hex 48',
   });
 
 const parsed = envSchema.safeParse(process.env);
@@ -33,4 +43,10 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+if (env.JWT_SECRET === PLACEHOLDER_SECRET) {
+  console.warn(
+    'WARNING: JWT_SECRET is the .env.example placeholder. Fine for a local demo, never for a deployment.',
+  );
+}
 export type Env = typeof env;
