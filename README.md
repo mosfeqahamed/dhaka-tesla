@@ -8,12 +8,12 @@ A ride-pooling MVP for Dhaka's three-wheeled "Teslas". Passengers request a ride
 compatible requests share one Tesla; every passenger sees and pays their own fair, hand-checkable
 fare; the driver sees exactly who is riding and moves the trip through its stages.
 
-|                    |                                                                                                                      |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| **Live demo**      | _TODO: Vercel URL after deploying `release/v1.0.0` ([how](docs/deployment.md))_                                      |
-| **Demo video**     | [Watch the 6-minute walkthrough](https://drive.google.com/file/d/1c1mGOtmp8MK9E6D2setO8hfu8b4AVsA4/view?usp=sharing) |
-| **Run it locally** | `cp .env.example .env && docker compose up --build` → <http://localhost:3000>                                        |
-| **Demo accounts**  | Nusrat, Rafiq, Shirin (passengers) and Jashim (driver of Bullet) — [below](#demo-accounts)                           |
+|                    |                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Live demo**      | <https://dhaka-tesla-one.vercel.app> — API health: <https://dhaka-tesla-api-g6an.onrender.com/health> (first load after idle can take ~30–60 s: free-tier cold start) |
+| **Demo video**     | [Watch the 6-minute walkthrough](https://drive.google.com/file/d/1c1mGOtmp8MK9E6D2setO8hfu8b4AVsA4/view?usp=sharing)                                                  |
+| **Run it locally** | `cp .env.example .env && docker compose up --build` → <http://localhost:3000>                                                                                         |
+| **Demo accounts**  | Nusrat, Rafiq, Shirin (passengers) and Jashim (driver of Bullet) — [below](#demo-accounts)                                                                            |
 
 ## The problem, in short
 
@@ -301,7 +301,12 @@ See [`.env.example`](.env.example) — it contains placeholders only, never real
 
 ## Demo accounts
 
-All seeded accounts use the `SEED_PASSWORD` from your `.env` (the example value works for a local run).
+| Where                                            | Password                                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| Live site (<https://dhaka-tesla-one.vercel.app>) | `password1234`                                                            |
+| Local run                                        | the `SEED_PASSWORD` in your `.env` (the `.env.example` value works as is) |
+
+These are demo-only accounts with fictional emails; the password protects nothing else.
 
 | Who    | Role      | Email                   | In the story                                     |
 | ------ | --------- | ----------------------- | ------------------------------------------------ |
@@ -321,7 +326,12 @@ Free tiers only: web on Vercel, API on Render (same Docker image), Postgres on N
 guide, including how the first request after idle behaves: [docs/deployment.md](docs/deployment.md).
 If free hosting is unavailable, `docker compose up --build` reproduces the whole system.
 
-**Live URL:** _TODO after deploying `release/v1.0.0`_
+**Live (deployed from `release/v1.0.0`):**
+
+- Web: <https://dhaka-tesla-one.vercel.app> (Vercel)
+- API: <https://dhaka-tesla-api-g6an.onrender.com/health> (Render, Docker) · database on Neon
+- Sign in with any [demo account](#demo-accounts) — password **`password1234`** on the live site.
+- The API sleeps after ~15 minutes idle on Render's free tier; the first request then takes ~30–60 s.
 
 ## Authentication
 
