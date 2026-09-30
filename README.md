@@ -2,16 +2,18 @@
 
 _Share a seat. Split the fare. Survive Dhaka traffic._
 
+**▶ [Demo video: problem, architecture and product tour (6 min)](https://drive.google.com/file/d/1c1mGOtmp8MK9E6D2setO8hfu8b4AVsA4/view?usp=sharing)**
+
 A ride-pooling MVP for Dhaka's three-wheeled "Teslas". Passengers request a ride between city zones;
 compatible requests share one Tesla; every passenger sees and pays their own fair, hand-checkable
 fare; the driver sees exactly who is riding and moves the trip through its stages.
 
-|                    |                                                                                            |
-| ------------------ | ------------------------------------------------------------------------------------------ |
-| **Live demo**      | _TODO: Vercel URL after deploying `release/v1.0.0` ([how](docs/deployment.md))_            |
-| **Demo video**     | _TODO: Loom link (max 6 min)_                                                              |
-| **Run it locally** | `cp .env.example .env && docker compose up --build` → <http://localhost:3000>              |
-| **Demo accounts**  | Nusrat, Rafiq, Shirin (passengers) and Jashim (driver of Bullet) — [below](#demo-accounts) |
+|                    |                                                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Live demo**      | _TODO: Vercel URL after deploying `release/v1.0.0` ([how](docs/deployment.md))_                                      |
+| **Demo video**     | [Watch the 6-minute walkthrough](https://drive.google.com/file/d/1c1mGOtmp8MK9E6D2setO8hfu8b4AVsA4/view?usp=sharing) |
+| **Run it locally** | `cp .env.example .env && docker compose up --build` → <http://localhost:3000>                                        |
+| **Demo accounts**  | Nusrat, Rafiq, Shirin (passengers) and Jashim (driver of Bullet) — [below](#demo-accounts)                           |
 
 ## The problem, in short
 
